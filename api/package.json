@@ -1,0 +1,48 @@
+{
+  "name": "memory-game-app",
+  "version": "1.0.0",
+  "description": "Assignment for rara labs",
+  "main": "index.js",
+  "scripts": {
+    "client": "ts-node src/client.ts",
+    "gs": "ts-node ./src/swagger.ts",
+    "dev": "npm run gs && cross-env NODE_ENV=development nodemon --watch src --ext ts,json,js --polling-interval 100 --exec ts-node -r tsconfig-paths/register ./src/index.ts",
+    "start": "npm run build && cross-env NODE_ENV=production node ./build/index.js",
+    "build": "tsc && tsc-alias",
+    "lint": "eslint ./src/**/*.ts --fix",
+    "format": "prettier --write ./**/*.{ts,json}",
+    "test": "jest --coverage=true -w=1 --forceExit --detectOpenHandles --watchAll=false --testPathPattern=src/__tests__ --testPathIgnorePatterns=build",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "node -r esbuild-register src/drizzle/migrate.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/subarnaad/memory-game-app.git"
+  },
+  "author": "subarna adhikari",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/subarnaad/memory-game-app/issues"
+  },
+  "homepage": "https://github.com/subarnaad/memory-game-app#readme",
+  "dependencies": {
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "dotenv": "^17.2.1",
+    "drizzle-kit": "^0.31.4",
+    "eslint": "^9.34.0",
+    "install": "^0.13.0",
+    "nodemon": "^3.1.10",
+    "npm": "^11.5.2",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
