@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "client": "ts-node src/client.ts",
-    "gs": "ts-node ./src/swagger.ts",
-    "dev": "npm run gs && cross-env NODE_ENV=development nodemon --watch src --ext ts,json,js --polling-interval 100 --exec ts-node -r tsconfig-paths/register ./src/index.ts",
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts,json,js --polling-interval 100 --exec ts-node -r ./src/index.ts",
     "start": "npm run build && cross-env NODE_ENV=production node ./build/index.js",
     "build": "tsc && tsc-alias",
     "lint": "eslint ./src/**/*.ts --fix",
@@ -34,6 +33,7 @@
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.5",
+    "cross-env": "^10.0.0",
     "dotenv": "^17.2.1",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.34.0",
