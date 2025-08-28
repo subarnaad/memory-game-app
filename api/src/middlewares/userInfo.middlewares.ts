@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import { blackListToken } from '@/db/schema';
+import { blackListToken } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { db } from '@/migrate';
+import { db } from '../migrate';
 
 export interface AuthenticatedRequest extends Request {
   Id?: string;

@@ -3,8 +3,6 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const dab = process.env.DATABASE_URL;
-console.log('db url', dab);
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: false,

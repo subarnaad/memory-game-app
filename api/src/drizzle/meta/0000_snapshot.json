@@ -1,24 +1,87 @@
 {
-  "id": "99166d1a-4a5a-4594-9630-0f0afc460b60",
+  "id": "e1dcf437-36d9-443f-944e-01e1e4ff8d3f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.black-listed-token": {
-      "name": "black-listed-token",
+    "public.login_attempts": {
+      "name": "login_attempts",
       "schema": "",
       "columns": {
-        "token": {
-          "name": "token",
-          "type": "varchar",
+        "id": {
+          "name": "id",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
-        "expiry": {
-          "name": "expiry",
+        "userid": {
+          "name": "userid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_attempt": {
+          "name": "last_attempt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lock_until": {
+          "name": "lock_until",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.refresh_tokens": {
+      "name": "refresh_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userid": {
+          "name": "userid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -50,35 +113,17 @@
           "name": "email",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true
-        },
-        "password": {
-          "name": "password",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "resetToken": {
-          "name": "resetToken",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resetTokenExpiry": {
-          "name": "resetTokenExpiry",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "nameUpdateAt": {
-          "name": "nameUpdateAt",
-          "type": "timestamp",
-          "primaryKey": false,
           "notNull": false
         },
         "phoneNumber": {
           "name": "phoneNumber",
           "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -91,6 +136,18 @@
         "avatar": {
           "name": "avatar",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resetToken": {
+          "name": "resetToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resetTokenExpiry": {
+          "name": "resetTokenExpiry",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }

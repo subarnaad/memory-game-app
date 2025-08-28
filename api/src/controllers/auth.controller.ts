@@ -1,14 +1,17 @@
-import { userTable, blackListToken } from '../db/schema';
+import { userTable, refreshTokenTable, loginAttemptsTable, blackListToken } from '../db/schema';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { db } from '../migrate';
 import { eq } from 'drizzle-orm';
-import generateToken from '../utils/generateToken.utill';
+
+import { generateAccessToken, generateRefreshToken } from '../utils/generateToken.utill';
+
 import validator from 'validator';
 import { AuthenticatedRequest } from '../middlewares/userInfo.middlewares';
 import { sendEmail } from '../utils/email.utills';
 import { TokenService } from '../services.ts/token.service';
 import Jwt from 'jsonwebtoken';
+import { or } from 'drizzle-orm';
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -51,35 +54,81 @@ export const signup = async (req: Request, res: Response) => {
 
 export const signin = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { loginInput, password } = req.body;
+    if (!loginInput || !password) return res.status(400).json({ message: 'Credentials required' });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'invalid credential' });
+    let user;
+    if (/^\d+$/.test(loginInput)) {
+      const phone = Number(loginInput);
+      user = await db.select().from(userTable).where(eq(userTable.phoneNumber, phone)).limit(1);
+    } else {
+      user = await db.select().from(userTable).where(eq(userTable.email, loginInput)).limit(1);
     }
 
-    const getUsermail = await db.select().from(userTable).where(eq(userTable.email, email)).limit(1);
-    if (getUsermail.length === 0) {
-      return res.status(400).json({ message: 'invalid credential' });
+    if (!user.length) return res.status(400).json({ message: 'Invalid credentials' });
+    const manxeharu = user[0];
+
+    const attempt = await db.select().from(loginAttemptsTable).where(eq(loginAttemptsTable.userId, manxeharu.id)).limit(1);
+
+    const now = new Date();
+    if (attempt.length && attempt[0].lockUntil && now < attempt[0].lockUntil) {
+      return res.status(403).json({ message: `Account locked. Try after ${attempt[0].lockUntil}` });
     }
-    const user = getUsermail[0];
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    const isPasswordValid = await bcrypt.compare(password, manxeharu.password);
     if (!isPasswordValid) {
-      return res.status(400).json({ Message: 'invalid credential' });
+      if (attempt.length) {
+        const attempts = attempt[0].attempts + 1;
+        const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+        await db
+          .update(loginAttemptsTable)
+          .set({ attempts, lastAttempt: now, lockUntil })
+          .where(eq(loginAttemptsTable.userId, manxeharu.id));
+      } else {
+        await db.insert(loginAttemptsTable).values({ userId: manxeharu.id, attempts: 1, lastAttempt: now });
+      }
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
-    const token = generateToken(user.id, email);
+
+    await db.update(loginAttemptsTable).set({ attempts: 0, lockUntil: null }).where(eq(loginAttemptsTable.userId, manxeharu.id));
+
+    const accessToken = TokenService.generateAccessToken(manxeharu.id);
+    const { token: refreshToken, hash, expiry } = TokenService.generateRefreshToken();
+
+    await db.insert(refreshTokenTable).values({ userId: manxeharu.id, token: hash, expiresAt: expiry });
+
     return res.status(200).json({
       message: 'Signin successful',
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+      accessToken,
+      refreshToken,
+      user: { id: manxeharu.id, name: manxeharu.name, email: manxeharu.email, phoneNumber: manxeharu.phoneNumber },
     });
-  } catch (error: any) {
-    console.error(signin, error);
-    return res.status(400).json({ message: 'internal server error' });
+  } catch (err) {
+    console.error('Signin error:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ message: 'Refresh token required' });
+
+  const crypto = require('crypto');
+  const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+  const tokenRecord = await db.select().from(refreshTokenTable).where(eq(refreshTokenTable.token, hashedToken)).limit(1);
+
+  if (!tokenRecord.length) return res.status(403).json({ message: 'Invalid refresh token' });
+
+  const now = new Date();
+  if (now > tokenRecord[0].expiresAt) return res.status(403).json({ message: 'Refresh token expired' });
+
+  const accessToken = TokenService.generateAccessToken(tokenRecord[0].userId);
+  const { token: newRefreshToken, hash: newHash, expiry: newExpiry } = TokenService.generateRefreshToken();
+
+  await db.update(refreshTokenTable).set({ token: newHash, expiresAt: newExpiry }).where(eq(refreshTokenTable.id, tokenRecord[0].id));
+
+  res.status(200).json({ accessToken, refreshToken: newRefreshToken });
 };
 
 export const changePassword = async (req: AuthenticatedRequest, res: Response) => {
@@ -115,6 +164,7 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
     return res.status(400).json({ message: 'internal server error' });
   }
 };
+
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -127,7 +177,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const { token, hash, expiry } = TokenService.generate();
+    const { token, hash, expiry } = TokenService.generateRefreshToken();
     await db.update(userTable).set({ resetToken: hash, resetTokenExpiry: expiry }).where(eq(userTable.id, user[0].id)).execute();
 
     const resetURL = `${process.env.CLIENTRESET_URL}/reset-password/${token}`;
@@ -171,29 +221,31 @@ export const createNewPassword = async (req: AuthenticatedRequest, res: Response
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(400).json({ message: 'Authorization token is required.' });
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token required' });
     }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      return res.status(404).json({ message: 'JWT_SECRET is not defined.' });
-    }
-    const decoded = Jwt.verify(token, secret) as { exp: number };
-    if (!decoded?.exp) {
-      return res.status(400).json({ message: 'Invalid token.' });
-    }
-    const expiryAt = new Date(decoded.exp * 1000);
-    await db.insert(blackListToken).values({
-      token,
-      expiry: expiryAt,
-    });
+    const crypto = require('crypto');
+    const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
-    res.clearCookie('auth_token');
-    return res.status(200).json({ message: 'Logged out successfully.' });
+    await db.delete(refreshTokenTable).where(eq(refreshTokenTable.token, hashedToken));
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const secret = process.env.JWT_SECRET as string;
+      const decoded: any = Jwt.verify(token, secret);
+
+      await db.insert(blackListToken).values({
+        token,
+        expiry: new Date(decoded.exp * 1000),
+      });
+    }
+
+    return res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout Error:', error);
-    return res.status(500).json({ message: 'Internal server error.' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
