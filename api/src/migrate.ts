@@ -7,9 +7,10 @@ const dab = process.env.DATABASE_URL;
 console.log('db url', dab);
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: false,
+  // ssl: {
+  //   rejectUnauthorized: false,
+  // },
 });
 pool
   .connect()
