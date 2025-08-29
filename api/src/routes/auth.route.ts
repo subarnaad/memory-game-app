@@ -14,6 +14,7 @@ authRouter.post('/createNewPassword', createNewPassword);
 authRouter.post('/changePassword', changePassword);
 
 authRouter.post('/log-out', logout);
+
 authRouter.post('/refresh-token', refreshAccessToken);
 
 

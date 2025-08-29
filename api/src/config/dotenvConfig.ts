@@ -9,7 +9,7 @@ const config = {
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS,
   DATABASE_URL: process.env.DATABASE_URL,
-  JWT_SECRET: process.env.JWT_SECRET || 'quickconnectsecretkey',
+  JWT_SECRET: process.env.JWT_SECRET || 'memorygameappsecretkey',
 };
 
 export default config;

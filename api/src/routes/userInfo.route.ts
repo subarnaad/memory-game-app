@@ -8,5 +8,5 @@ const userInfoRouter = express.Router();
 
 userInfoRouter.patch('/edictUserInfo', uploadAvatar.single('avatar'), authenticateJWT, edictUserInfo);
 userInfoRouter.use('/uploads', express.static(path.join(__dirname, '..', '..', 'uploads')));
-userInfoRouter.get('/allUsers', getAllUser);
+userInfoRouter.get('/allUsers', authenticateJWT, getAllUser);
 export default userInfoRouter;

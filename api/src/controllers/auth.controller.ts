@@ -3,24 +3,25 @@ import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { db } from '../migrate';
 import { eq } from 'drizzle-orm';
-
-import { generateAccessToken, generateRefreshToken } from '../utils/generateToken.utill';
-
+import crypto from 'crypto';
 import validator from 'validator';
 import { AuthenticatedRequest } from '../middlewares/userInfo.middlewares';
 import { sendEmail } from '../utils/email.utills';
 import { TokenService } from '../services.ts/token.service';
 import Jwt from 'jsonwebtoken';
-import { or } from 'drizzle-orm';
 
 export const signup = async (req: Request, res: Response) => {
   try {
     const { name, email, password, confirmPassword, phoneNumber } = req.body;
+
     if (!name || !email || !password || !confirmPassword || !phoneNumber) {
       return res.status(400).json({ Error: 'fill all feilds' });
     }
-    if (password.length < 8) {
-      return res.status(400).json({ Error: 'Password must be at least 8 characters long' });
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: 'Password format invalid',
+      });
     }
     if (password !== confirmPassword) {
       return res.status(400).json({ Error: "password don't match! use same password as before" });
@@ -30,10 +31,17 @@ export const signup = async (req: Request, res: Response) => {
     if (!gmailRegex.test(email)) {
       return res.status(400).json({ error: 'Please use a valid Gmail address' });
     }
-    const checkUserExist = await db.select().from(userTable).where(eq(userTable.email, email)).limit(1);
-    if (checkUserExist.length > 0) {
-      return res.status(400).json({ message: 'mail already exist' });
+    if (!/^\d{10}$/.test(phoneNumber)) {
+      return res.status(400).json({
+        message: 'Phone number must be exactly 10 digits.',
+      });
     }
+    const checkUserMailExist = await db.select().from(userTable).where(eq(userTable.email, email)).limit(1);
+    const checkUserNumberExist = await db.select().from(userTable).where(eq(userTable.phoneNumber, phoneNumber));
+    if (checkUserMailExist.length > 0 || checkUserNumberExist.length > 0) {
+      return res.status(400).json({ message: 'email or phone number already exist' });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -66,42 +74,39 @@ export const signin = async (req: Request, res: Response) => {
     }
 
     if (!user.length) return res.status(400).json({ message: 'Invalid credentials' });
-    const manxeharu = user[0];
+    const manxeko = user[0];
 
-    const attempt = await db.select().from(loginAttemptsTable).where(eq(loginAttemptsTable.userId, manxeharu.id)).limit(1);
+    const attempt = await db.select().from(loginAttemptsTable).where(eq(loginAttemptsTable.userId, manxeko.id)).limit(1);
 
     const now = new Date();
     if (attempt.length && attempt[0].lockUntil && now < attempt[0].lockUntil) {
       return res.status(403).json({ message: `Account locked. Try after ${attempt[0].lockUntil}` });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, manxeharu.password);
+    const isPasswordValid = await bcrypt.compare(password, manxeko.password);
     if (!isPasswordValid) {
       if (attempt.length) {
         const attempts = attempt[0].attempts + 1;
         const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
-        await db
-          .update(loginAttemptsTable)
-          .set({ attempts, lastAttempt: now, lockUntil })
-          .where(eq(loginAttemptsTable.userId, manxeharu.id));
+        await db.update(loginAttemptsTable).set({ attempts, lastAttempt: now, lockUntil }).where(eq(loginAttemptsTable.userId, manxeko.id));
       } else {
-        await db.insert(loginAttemptsTable).values({ userId: manxeharu.id, attempts: 1, lastAttempt: now });
+        await db.insert(loginAttemptsTable).values({ userId: manxeko.id, attempts: 1, lastAttempt: now });
       }
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    await db.update(loginAttemptsTable).set({ attempts: 0, lockUntil: null }).where(eq(loginAttemptsTable.userId, manxeharu.id));
+    await db.update(loginAttemptsTable).set({ attempts: 0, lockUntil: null }).where(eq(loginAttemptsTable.userId, manxeko.id));
 
-    const accessToken = TokenService.generateAccessToken(manxeharu.id);
+    const accessToken = TokenService.generateAccessToken(manxeko.id);
     const { token: refreshToken, hash, expiry } = TokenService.generateRefreshToken();
 
-    await db.insert(refreshTokenTable).values({ userId: manxeharu.id, token: hash, expiresAt: expiry });
+    await db.insert(refreshTokenTable).values({ userId: manxeko.id, token: hash, expiresAt: expiry });
 
     return res.status(200).json({
       message: 'Signin successful',
       accessToken,
       refreshToken,
-      user: { id: manxeharu.id, name: manxeharu.name, email: manxeharu.email, phoneNumber: manxeharu.phoneNumber },
+      user: { id: manxeko.id, name: manxeko.name, email: manxeko.email, phoneNumber: manxeko.phoneNumber },
     });
   } catch (err) {
     console.error('Signin error:', err);
@@ -113,7 +118,6 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
   if (!refreshToken) return res.status(400).json({ message: 'Refresh token required' });
 
-  const crypto = require('crypto');
   const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
   const tokenRecord = await db.select().from(refreshTokenTable).where(eq(refreshTokenTable.token, hashedToken)).limit(1);
@@ -225,8 +229,6 @@ export const logout = async (req: Request, res: Response) => {
     if (!refreshToken) {
       return res.status(400).json({ message: 'Refresh token required' });
     }
-
-    const crypto = require('crypto');
     const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
     await db.delete(refreshTokenTable).where(eq(refreshTokenTable.token, hashedToken));
