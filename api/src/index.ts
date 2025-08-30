@@ -3,8 +3,8 @@ import { Request, Response } from 'express';
 import CONFIG from './config/dotenvConfig';
 import authRouter from './routes/auth.route';
 import userInfoRouter from './routes/userInfo.route';
+import gameRouter from './routes/game.route';
 import cors from 'cors';
-
 import { setupSwagger } from './swagger';
 
 const app = express();
@@ -22,6 +22,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 app.use('/api', authRouter);
 app.use('/api', userInfoRouter);
+app.use('/api/game', gameRouter);
 
 setupSwagger(app, `${CONFIG.DEV_HOST}:${CONFIG.DEV_PORT}/api`);
 
