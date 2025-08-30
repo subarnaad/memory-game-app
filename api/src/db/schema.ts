@@ -1,21 +1,4 @@
-// import { bigint, varchar, uuid, pgTable, text, timestamp, serial, integer } from 'drizzle-orm/pg-core';
-
-// export const userTable = pgTable('user', {
-//   id: uuid('id').primaryKey().defaultRandom(),
-//   name: varchar('name').notNull(),
-//   email: varchar('email', { length: 255 }).notNull().unique(),
-//   password: varchar('password').notNull(),
-//   resetToken: text('resetToken'),
-//   resetTokenExpiry: timestamp('resetTokenExpiry'),
-//   nameUpdateAt: timestamp('nameUpdateAt'),
-//   phoneNumber: bigint({ mode: 'number' }).notNull().unique(),
-//   gender: varchar('gender'),
-//   avatar: varchar('avatar'),
-//   failedLoginAttempts: integer('failed_login_attempts').default(0),
-//   lockoutExpiry: timestamp('lockout_expiry'),
-// });
-
-import { pgTable, uuid, varchar, bigint, text, timestamp, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, bigint, text, timestamp, integer, boolean } from 'drizzle-orm/pg-core';
 
 export const userTable = pgTable('user', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -49,5 +32,15 @@ export const blackListToken = pgTable('blacklist_tokens', {
   id: uuid('id').primaryKey().defaultRandom(),
   token: text('token').notNull(),
   expiry: timestamp('expiry').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const games = pgTable('games', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  userId: varchar('userid', { length: 36 }).notNull(),
+  state: text('state').notNull(),
+  moves: integer('moves').default(0).notNull(),
+  score: integer('score').default(0).notNull(),
+  completed: boolean('completed').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
