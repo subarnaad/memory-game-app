@@ -15,7 +15,7 @@ export const signup = async (req: Request, res: Response) => {
     const { name, email, password, confirmPassword, phoneNumber } = req.body;
 
     if (!name || !email || !password || !confirmPassword || !phoneNumber) {
-      return res.status(400).json({ Error: 'fill all feilds' });
+      return res.status(400).json({ error: 'Please fill all fields' });
     }
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
     if (!passwordRegex.test(password)) {
