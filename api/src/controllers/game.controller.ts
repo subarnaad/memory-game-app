@@ -4,12 +4,15 @@ import { games } from '../db/schema';
 import { generateShuffledCards } from '../utils/shuffle.utill';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthenticatedRequest } from '../middlewares/userInfo.middlewares';
 
-export const startGame = async (req: Request, res: Response) => {
-  const { userId } = req.body;
+export const startGame = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.Id;
 
   try {
-    if (!userId) return res.status(400).json({ error: 'userId required' });
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     const cards = generateShuffledCards();
 
@@ -28,10 +31,10 @@ export const startGame = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: 'new game created ready to start',
       gameId: game.id,
-      cards: cards.map((c) => ({ id: c.id, matched: false })),
+      cards: cards.map((c) => ({ id: c.id, symbol: c.symbol, matched: c.matched })),
     });
   } catch (error) {
-    console.error(startGame, error);
+    console.error('startGame error:', error);
     return res.status(500).json({ message: 'internal server error' });
   }
 };
@@ -82,12 +85,12 @@ export const makeMove = async (req: Request, res: Response) => {
     moves,
     score,
     completed,
-    cards: state.map((c) => ({ id: c.id, matched: c.matched })),
+    cards: state.map((c) => ({ id: c.id, symbol: c.symbol, matched: c.matched })),
   });
 };
 
-export const gameHistory = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+export const gameHistory = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.Id;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
   const history = await db.select().from(games).where(eq(games.userId, userId));

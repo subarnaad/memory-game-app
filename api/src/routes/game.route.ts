@@ -6,6 +6,6 @@ const gameRouter = express.Router();
 
 gameRouter.post('/new-game', authenticateJWT, startGame);
 gameRouter.post('/make-move', authenticateJWT, makeMove);
-gameRouter.get('/history/:userId', authenticateJWT, gameHistory);
+gameRouter.get('/history', authenticateJWT, gameHistory);
 
 export default gameRouter;

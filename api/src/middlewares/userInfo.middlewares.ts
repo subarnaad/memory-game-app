@@ -24,10 +24,10 @@ export const authenticateJWT = async (req: AuthenticatedRequest, res: Response, 
     if (!secret) {
       throw new Error('JWT_SECRET is not defined');
     }
-    const decoded = jwt.verify(token, secret) as { Id: string };
+    const decoded = jwt.verify(token, secret) as { userId: string };
     console.log('Decoded Token:', decoded);
 
-    req.Id = decoded.Id;
+    req.Id = decoded.userId;
     next();
   } catch (error) {
     return res.status(403).json({ message: 'Invalid or expired token' });

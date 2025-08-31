@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-
+import jsonwebtoken from 'jsonwebtoken';
 export class TokenService {
   static generateRefreshToken() {
     const token = crypto.randomBytes(32).toString('hex');
@@ -7,7 +7,7 @@ export class TokenService {
     const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     return { token, hash, expiry };
   }
- 
+
   static generateAccessToken(userId: string) {
     const secret = process.env.JWT_SECRET as string;
     const expiresIn = process.env.ACCESS_TOKEN_EXPIRY || '15m';
@@ -18,4 +18,3 @@ export class TokenService {
     return crypto.createHash('sha256').update(token).digest('hex') === hash;
   }
 }
-

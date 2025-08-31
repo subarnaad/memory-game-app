@@ -230,21 +230,30 @@ export const logout = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Refresh token required' });
     }
     const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
-
     await db.delete(refreshTokenTable).where(eq(refreshTokenTable.token, hashedToken));
 
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const secret = process.env.JWT_SECRET as string;
-      const decoded: any = Jwt.verify(token, secret);
 
-      await db.insert(blackListToken).values({
-        token,
-        expiry: new Date(decoded.exp * 1000),
-      });
+      try {
+        const decoded: any = Jwt.verify(token, secret);
+        await db.insert(blackListToken).values({
+          token,
+          expiry: new Date(decoded.exp * 1000),
+        });
+      } catch (err: any) {
+        if (err.name === 'TokenExpiredError') {
+          await db.insert(blackListToken).values({
+            token,
+            expiry: new Date(),
+          });
+        } else {
+          console.error('JWT verify failed:', err);
+        }
+      }
     }
-
     return res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout Error:', error);
