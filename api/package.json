@@ -6,14 +6,14 @@
   "scripts": {
     "client": "ts-node src/client.ts",
     "gs": "ts-node ./src/swagger.ts",
-    "dev": "npm run gs && cross-env NODE_ENV=development nodemon --watch src --ext ts,json,js --polling-interval 100 --exec ts-node -r tsconfig-paths/register ./src/index.ts",
+    "dev": "npm run gs && cross-env NODE_ENV=development nodemon --watch src --ext ts,json,js --polling-interval 100 --exec ts-node -r ./src/index.ts",
     "start": "npm run build && cross-env NODE_ENV=production node ./build/index.js",
     "build": "tsc && tsc-alias",
     "lint": "eslint ./src/**/*.ts --fix",
     "format": "prettier --write ./**/*.{ts,json}",
     "test": "jest --coverage=true -w=1 --forceExit --detectOpenHandles --watchAll=false --testPathPattern=src/__tests__ --testPathIgnorePatterns=build",
     "db:generate": "drizzle-kit generate:pg",
-    "db:push": "node -r esbuild-register src/drizzle/migrate.ts"
+    "db:push": "drizzle-kit push --config ./drizzle.config.ts"
   },
   "repository": {
     "type": "git",
@@ -26,14 +26,32 @@
   },
   "homepage": "https://github.com/subarnaad/memory-game-app#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
-    "pg": "^8.16.3"
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "ngrok": "^5.0.0-beta.2",
+    "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
+    "swagger": "^0.7.5",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.1",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
     "@types/node": "^24.3.0",
+    "@types/nodemailer": "^7.0.1",
     "@types/pg": "^8.15.5",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/validator": "^13.15.2",
+    "cross-env": "^10.0.0",
     "dotenv": "^17.2.1",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.34.0",
@@ -44,5 +62,18 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "src",
+      "config",
+      "scripts"
+    ],
+    "ext": "ts,json,js",
+    "ignore": [
+      "swagger_output.json"
+    ],
+    "polling-interval": 100,
+    "legacy-watch": true
   }
 }
