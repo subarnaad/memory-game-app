@@ -81,7 +81,7 @@ export default function RegisterForm({ setLogin }: { setLogin: () => void }) {
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
-              <Input className=" " id="name" type="text" {...register("name")} />
+              <Input className="" id="name" type="text" {...register("name")} />
               {errors.name && (
                 <span className="text-red-500 text-sm">
                   {errors.name.message}
@@ -104,7 +104,7 @@ export default function RegisterForm({ setLogin }: { setLogin: () => void }) {
               <select
                 id="gender"
                 {...register("gender")}
-                className="border rounded-md px-3 py-2"
+                className=" border-solid border-2 rounded-2xl py-2 border-gray-500"
               >
                 <option value="">Select gender</option>
                 <option value="male">Male</option>
