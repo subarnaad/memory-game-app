@@ -194,26 +194,29 @@ export const forgotPassword = async (req: Request, res: Response) => {
   }
 };
 
-export const createNewPassword = async (req: AuthenticatedRequest, res: Response) => {
+export const createNewPassword = async (req: Request, res: Response) => {
   const { resetToken, newPassword } = req.body;
 
   try {
     if (!resetToken || !newPassword) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
-    let decoded;
-    let secret = process.env.JWT_SECRET as string;
-    try {
-      decoded = Jwt.verify(resetToken, secret);
-    } catch (error) {
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    const user = await db.select().from(userTable).where(eq(userTable.resetToken, hashedToken)).execute();
+
+    if (!user?.length || !user[0].resetTokenExpiry || user[0].resetTokenExpiry < new Date()) {
       return res.status(400).json({ message: 'Invalid or expired reset token.' });
     }
-    const userId = req.Id;
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db
       .update(userTable)
-      .set({ password: hashedPassword })
-      .where(eq(userTable.id, userId as string))
+      .set({
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      })
+      .where(eq(userTable.id, user[0].id))
       .execute();
 
     return res.status(200).json({ message: 'Password reset successfully.' });
