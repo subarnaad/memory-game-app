@@ -138,7 +138,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ setLogin }) => {
                   className="cursor-pointer"
                   onClick={setLogin}
                 >
-                  Sign Up
+                  <p className="text-[var(--foreground)]"> Sign Up</p>
                 </Button>
               </span>
             </CardAction>

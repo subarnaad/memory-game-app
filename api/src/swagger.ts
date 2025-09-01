@@ -13,7 +13,7 @@ const doc = {
     description: 'memory game',
   },
   host: 'localhost:8000',
-  basePath: '/api',
+  basePath: '',
   schemes: ['http'],
   consumes: ['application/json'],
   produces: ['application/json'],
