@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import Cookies from "js-cookie";
 
 interface Card {
   id: number;
@@ -20,6 +21,13 @@ export default function MemoryGame() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [gameId, setGameId] = useState<string | null>(null);
+
+  const [userName,setUserName]= useState<string| null>(null)
+  useEffect(() => {
+    const name = Cookies.get("user_name");
+    if (name) setUserName(name);
+  }, []);
+
 
   const startGame = async () => {
     try {
@@ -82,6 +90,9 @@ export default function MemoryGame() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 gap-6">
+      <div>
+        <p>{userName}</p>
+      </div>
       <div className="flex gap-8 text-lg font-semibold text-slate-900">
         <p>⏱ Time: {time}s</p>
         <p>🎯 Moves: {moves}</p>
