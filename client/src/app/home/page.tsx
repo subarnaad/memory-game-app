@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import api from "@/lib/api";
 
 const Page = () => {
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const name = Cookies.get("user_name");
+    if (name) setUserName(name);
+  }, []);
+
+
   const handleLogout = async () => {
     try {
       const refreshToken = Cookies.get("refresh_token");
@@ -36,7 +44,7 @@ const Page = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 gap-6">
-      <h1 className="text-3xl text-slate-900">Welcome to Memory Game</h1>
+      <h1 className="text-3xl text-slate-900">{userName ? `Welcome, ${userName}!` : "Welcome!"}</h1>
       <Link
         className="text-lg text-slate-900 bg-blue-500 p-2 rounded-2xl hover:bg-blue-300 transition"
         href="/game"

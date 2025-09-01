@@ -57,10 +57,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ setLogin }) => {
         }
       );
 
-      const { accessToken, refreshToken } = response.data;
+      const { accessToken, refreshToken, user} = response.data;
 
       Cookies.set("access_token", accessToken, { expires: 1 });
       Cookies.set("refresh_token", refreshToken, { expires: 7 });
+      Cookies.set("user_name",user.name)
 
       router.push("/home");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
